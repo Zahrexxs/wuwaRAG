@@ -19,3 +19,6 @@ github-credential
 .DS_Store
 .idea/
 .vscode/
+
+# File Exeption
+project-record.md
