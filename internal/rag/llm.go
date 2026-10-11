@@ -94,7 +94,7 @@ func (c *LLMClient) callOpenAICompatible(ctx context.Context, endpoint, apiKey, 
 		"model":       model,
 		"messages":    messages,
 		"temperature": 0.2,
-		"max_tokens":  1024,
+		"max_tokens":  4096,
 	}
 
 	bodyBytes, err := json.Marshal(reqBody)
@@ -153,7 +153,7 @@ func (c *LLMClient) callOpenAICompatible(ctx context.Context, endpoint, apiKey, 
 }
 
 func (c *LLMClient) callGeminiDirect(ctx context.Context, systemPrompt, userQuery string) (*ChatResponse, error) {
-	endpoint := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s", c.geminiKey)
+	endpoint := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=%s", c.geminiKey)
 
 	reqPayload := map[string]interface{}{
 		"system_instruction": map[string]interface{}{
@@ -171,7 +171,7 @@ func (c *LLMClient) callGeminiDirect(ctx context.Context, systemPrompt, userQuer
 		},
 		"generationConfig": map[string]interface{}{
 			"temperature":     0.2,
-			"maxOutputTokens": 1024,
+			"maxOutputTokens": 4096,
 		},
 	}
 

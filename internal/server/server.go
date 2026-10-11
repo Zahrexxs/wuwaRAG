@@ -156,7 +156,7 @@ func (s *Server) handleChat(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 120*time.Second)
 	defer cancel()
 
 	res, err := s.ragService.AnswerQuestion(ctx, req.Question)
