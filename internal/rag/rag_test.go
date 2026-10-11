@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/ajibul/wuwaRAG/internal/qdrant"
+	"github.com/ajieblr-dev/wuwaRAG/internal/qdrant"
 )
 
 func TestDeterministicEmbedder(t *testing.T) {

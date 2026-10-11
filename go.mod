@@ -1,4 +1,4 @@
-module github.com/ajibul/wuwaRAG
+module github.com/ajieblr-dev/wuwaRAG
 
 go 1.27.2
 

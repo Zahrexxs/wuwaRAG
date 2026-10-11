@@ -69,7 +69,7 @@ func NewClient(baseURL string) *Client {
 		httpClient: &http.Client{
 			Timeout: 45 * time.Second,
 		},
-		userAgent: "WuwaLoreRAG/1.0 (https://github.com/ajibul/wuwaRAG; lore-assistant@local)",
+		userAgent: "WuwaLoreRAG/1.0 (https://github.com/ajieblr-dev/wuwaRAG; lore-assistant@local)",
 	}
 }
 

@@ -9,10 +9,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/ajibul/wuwaRAG/internal/fetcher"
-	"github.com/ajibul/wuwaRAG/internal/parser"
-	"github.com/ajibul/wuwaRAG/internal/qdrant"
-	"github.com/ajibul/wuwaRAG/internal/rag"
+	"github.com/ajieblr-dev/wuwaRAG/internal/fetcher"
+	"github.com/ajieblr-dev/wuwaRAG/internal/parser"
+	"github.com/ajieblr-dev/wuwaRAG/internal/qdrant"
+	"github.com/ajieblr-dev/wuwaRAG/internal/rag"
 )
 
 // Server holds the dependencies for the HTTP API.

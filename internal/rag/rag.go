@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ajibul/wuwaRAG/internal/qdrant"
+	"github.com/ajieblr-dev/wuwaRAG/internal/qdrant"
 )
 
 // SourceSnippet represents a retrieved piece of lore used as evidence.

@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/ajibul/wuwaRAG/internal/fetcher"
-	"github.com/ajibul/wuwaRAG/internal/qdrant"
-	"github.com/ajibul/wuwaRAG/internal/rag"
+	"github.com/ajieblr-dev/wuwaRAG/internal/fetcher"
+	"github.com/ajieblr-dev/wuwaRAG/internal/qdrant"
+	"github.com/ajieblr-dev/wuwaRAG/internal/rag"
 )
 
 func TestHealthEndpoint(t *testing.T) {
