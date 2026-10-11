@@ -1,0 +1,21 @@
+# Binaries
+bin/
+api
+ingest
+
+# Environment variables
+.env
+
+# Go build cache
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/

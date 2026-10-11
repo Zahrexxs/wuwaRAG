@@ -1,0 +1,74 @@
+services:
+  # 1. Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: wuwa-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333" # HTTP REST API
+      - "6334:6334" # gRPC
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/localhost/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. LiteLLM Gateway & Fallback Proxy
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: wuwa-litellm
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm_config.yaml:/app/config.yaml:ro
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY:-}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-wuwa-rag-secret}
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "2"]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/localhost/4000' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 3. Wuthering Waves Lore RAG API Backend
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: wuwa-rag-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - QDRANT_URL=http://qdrant:6333
+      - QDRANT_COLLECTION=wuwa_lore
+      - VECTOR_DIM=384
+      - LITELLM_URL=http://litellm:4000
+      - LITELLM_KEY=${LITELLM_MASTER_KEY:-sk-wuwa-rag-secret}
+      - LITELLM_MODEL=wuwa-lore-model
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY:-}
+      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+      - WIKI_API_URL=https://wutheringwaves.fandom.com/api.php
+      - DEFAULT_WIKI_PAGE=Simulacrum_of_the_Heart
+      - TOP_K=5
+      - SCORE_THRESHOLD=0.25
+    depends_on:
+      qdrant:
+        condition: service_started
+      litellm:
+        condition: service_started
+
+volumes:
+  qdrant_data:
+    driver: local
