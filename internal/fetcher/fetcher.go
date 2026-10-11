@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -191,3 +193,41 @@ func (c *Client) SearchPages(ctx context.Context, query string) ([]string, error
 
 	return titles, nil
 }
+
+// SavePageToDisk saves a fetched WikiPage to disk as pretty JSON.
+func (c *Client) SavePageToDisk(page *WikiPage, destDir string) (string, error) {
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create directory %q: %w", destDir, err)
+	}
+
+	sanitized := strings.ReplaceAll(page.Title, " ", "_")
+	sanitized = strings.ReplaceAll(sanitized, "/", "_")
+	filePath := filepath.Join(destDir, sanitized+".json")
+
+	data, err := json.MarshalIndent(page, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal page: %w", err)
+	}
+
+	if err := os.WriteFile(filePath, data, 0644); err != nil {
+		return "", fmt.Errorf("failed to write page to %q: %w", filePath, err)
+	}
+
+	return filePath, nil
+}
+
+// LoadPageFromDisk loads a WikiPage from a local JSON file.
+func LoadPageFromDisk(filePath string) (*WikiPage, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file %q: %w", filePath, err)
+	}
+
+	var page WikiPage
+	if err := json.Unmarshal(data, &page); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal wiki page: %w", err)
+	}
+
+	return &page, nil
+}
+

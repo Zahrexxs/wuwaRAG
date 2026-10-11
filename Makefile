@@ -15,13 +15,17 @@ test:
 run: build
 	./bin/api
 
+# Gather raw data from MediaWiki into data/raw/
+gather: build
+	./bin/ingest --pages "Simulacrum_of_the_Heart,Hsin,Suoming,Mengzhou,Xuanfang_Hold" --gather-only
+
 # Run wiki ingestion CLI
 ingest: build
-	./bin/ingest --page "Simulacrum_of_the_Heart"
+	./bin/ingest --pages "Simulacrum_of_the_Heart,Hsin,Suoming,Mengzhou,Xuanfang_Hold"
 
 # Test parsing and preview chunks without writing to Qdrant
 dry-run: build
-	./bin/ingest --page "Simulacrum_of_the_Heart" --dry-run
+	./bin/ingest --pages "Simulacrum_of_the_Heart,Hsin,Suoming,Mengzhou,Xuanfang_Hold" --dry-run
 
 # Start containers via Docker Compose / Podman Compose
 docker-up:

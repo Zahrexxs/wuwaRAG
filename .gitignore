@@ -5,7 +5,7 @@ ingest
 
 # Environment variables
 .env
-
+github-credential
 # Go build cache
 *.exe
 *.exe~
