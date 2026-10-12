@@ -1,35 +1,39 @@
-# Project As Complete Opendesign Design System
+# Resonance Archive · WuWa "Tacet Resonance" Design System
 
 > Category: Project Design System
 > Surface: web
 > Source project: `opendesign-wuwa-lore-rag-prompt.md` (`590e3270-e9c2-4fb0-9b28-2b9e59e9fdc4`)
+> Skill lineage: `skills/design-md/{notion,wired,theverge,linear.app,vercel,mintlify}/DESIGN.md` (VoltAgent awesome-design-md, MIT)
 
 ## 1. Visual Theme & Atmosphere
 
-**Editorial.** This is a reader first and a maintainer console second, so the default surface is
-paper and the type is set for reading. The system borrows from scholarly print rather than from
-dashboard software: running heads, a real text column, hairline rules, numbered steps, and
-citations set as **footnotes**.
+**Dark-first game codex.** Solaris-3 abyss (`#070B14`) with resonance-teal glow
+and brass citations — a Tacet field the reader consults, not scholarly paper.
+Reader surfaces keep Wired-style editorial serif + footnote apparatus; admin
+keeps Linear-style near-black console panels. Mintlify/Vercel gradient heroes
+appear at hero scale only, never miniaturised.
 
 That last decision is the thesis of the design. The product claims *"every answer carries its
 receipts."* A side rail is the one layout that divorces the evidence from the claim it supports,
 so the sources are set as the apparatus beneath the answer instead — the claim, the superscript
-numeral, then the passage it came from.
+numeral, then the passage it came from. Source cards are now 12px codex panels
+(Notion/Mintlify) so passages read as collectible lore entries.
 
-Dark is fully supported and treated as a first-class theme, not an inverted afterthought.
+Dark is the default (`data-theme="dark"`); light is a supported Solaris-paper fallback.
 
 ## 2. Color
 
-Cool neutrals only. No warm beige, cream, peach, or orange-brown washes.
+WuWa resonance pair on abyss neutrals. Teal = interactive only; brass = source only.
 
-| Role | Light (default) | Dark |
+| Role | Light (Solaris paper) | Dark (Tacet abyss, default) |
 |---|---|---|
-| `--bg-0` … `--bg-3` | `#FBFBFC` → `#ECEEF1` | `#0F1113` → `#262A2F` |
-| `--text-1` … `--text-3` | `#14171A` → `#767E86` | `#ECEEF0` → `#79828A` |
-| `--border` / `--rule` | `#E3E5E9` / `#DFE1E6` | `#23272B` / `#2A2E33` |
-| `--border-input` | `#9AA3AC` | `#586069` |
-| `--accent` | `#0B5D57` | `#5CCFC4` |
-| `--gold` (citation) | `#8A5A0B` | `#D9A441` |
+| `--bg-0` … `--bg-3` | `#EFF2F7` → `#D8E0EE` | `#070B14` → `#1B2745` |
+| `--text-1` … `--text-3` | `#101724` → `#6B7A93` | `#E9EEF7` → `#6E7E99` |
+| `--border` / `--rule` | `#D8E0EE` / `#DDE4F0` | `#1E2A45` / `#22304D` |
+| `--border-input` | `#8A99B5` | `#3D4F74` |
+| `--accent` (resonance teal) | `#0B6B5F` | `#2DD4BF` |
+| `--gold` (brass citation) | `#7A5200` | `#D9A441` |
+| hero atmosphere | `#0B1B33` → `#0E4F4A` → `#C9A227` | `#070B14` → `#0E4F4A` → `#8A6A1B` |
 | danger / success / warning / info | `#A4203A` `#17694A` `#8A5D05` `#1B54A8` | lightened |
 
 Three rules, enforced:
@@ -70,9 +74,10 @@ Headings use `text-wrap: balance`, body copy `text-wrap: pretty`, never both on 
 Base unit 4px; the working scale is 4 / 8 / 12 / 20 / 36. Gutters are 28px, dropping to 20px
 below 900px and 14px inside the top bar below 480px.
 
-**Radii are 3px**, not 10. Only chips, pills, and the health dot stay round. This is the single
-biggest reason the system reads as print rather than as a consumer app. The composer is ruled
-rather than rounded; modals are square-ish slips with one soft shadow; the bottom sheet has a
+**Radii are 8px controls / 12px cards** (Notion/Mintlify), pills stay round.
+Primary CTAs are Convene-style pills with resonance glow on hover (Vercel/Mintlify).
+The composer stays ruled rather than boxed; source cards and surfaces are 12px
+codex panels with stacked subtle shadows; modals keep one soft shadow; the bottom sheet has a
 0 radius on its top corners and a 3px grip.
 
 Section separation is `padding-top` plus a `--rule` border, never a box. Sections that would
@@ -162,8 +167,7 @@ Measured on slow 4G (1.6 Mbps, 150 ms RTT) with 4× CPU throttle, not asserted:
 ## 10. Anti-patterns
 
 - Purple/indigo gradients, glow blobs, or decorative hero media with no data behind it.
-- **Boxes.** The regression this system exists to prevent: wrapping content groups in borders and
-  fills so everything looks the same. Reach for a rule and space first.
+- **Gradient anywhere except the hero band + tacet line.** Vercel rule: atmosphere lives at hero scale only.
 - Large radii on containers holding text. Only pills and dots are round.
 - Cards inside cards; nested panels as a substitute for layout.
 - `transition: all`, `will-change: all`, positive `tabindex`, `outline: none` with no replacement.
