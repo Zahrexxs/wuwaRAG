@@ -194,7 +194,7 @@
       { page: "Suoming", section: "[mock] Character profile", spk: ["Suoming", "Jiu"], score: 0.55 },
       { page: "Mengzhou", section: "[mock] Location", spk: ["Ninth Seal"], score: 0.44 }
     ];
-    return specs.map((s, i) => ({
+    return specs.map((s, i) => OD.normalizeSource({
       index: i + 1,
       page_title: s.page,
       section_title: s.section,
@@ -203,7 +203,76 @@
       chunk_text:
         "[mock] Placeholder passage. This stands in for a retrieved chunk from \u201C" + s.page +
         "\u201D so the sources panel and citation chips can be reviewed before the backend lists real chunks."
-    }));
+    }, i));
+  };
+
+  /* ── source normalizer (tolerant to BOTH shapes) ─────────────
+     Mock shape:    { index, page_title, section_title, speakers, score, chunk_text }
+     Backend shape: { id, title, section, subsection, speakers, content, score }
+                    (+ chunk_index carried through when present)
+     Returns a canonical object carrying BOTH aliases so every
+     renderer can read .title/.page_title, .section/.section_title,
+     .content/.chunk_text/.text interchangeably. Always use
+     OD.normalizeSource(s, i) / OD.normalizeSources(list) before render. */
+  OD.normalizeSource = function (raw, pos) {
+    if (!raw || typeof raw !== "object") raw = {};
+    var i = (typeof pos === "number" ? pos : 0);
+    var n = Number(raw.index != null ? raw.index : (raw.chunk_index != null ? raw.chunk_index : i + 1));
+    if (!isFinite(n) || n <= 0) n = i + 1;
+    var title = raw.page_title != null ? raw.page_title : (raw.page != null ? raw.page : (raw.title != null ? raw.title : "[page title not exposed]"));
+    var section = raw.section_title != null ? raw.section_title : (raw.section != null ? raw.section : "");
+    var subsection = raw.subsection != null ? raw.subsection : "";
+    var speakers = Array.isArray(raw.speakers) ? raw.speakers.slice() : (raw.speaker ? [raw.speaker] : []);
+    var text = raw.chunk_text != null ? raw.chunk_text : (raw.content != null ? raw.content : (raw.text != null ? raw.text : ""));
+    var score = (typeof raw.score === "number" && isFinite(raw.score)) ? raw.score : null;
+    var id = raw.id != null ? String(raw.id) : String(n);
+    var sTitle = String(title);
+    var sSection = String(section);
+    var sSub = String(subsection || "");
+    var sText = String(text);
+    return {
+      index: n,
+      id: id,
+      chunk_index: (raw.chunk_index != null ? raw.chunk_index : n),
+      title: sTitle, page_title: sTitle, page: sTitle,
+      section: sSection, section_title: sSection,
+      subsection: sSub,
+      speakers: speakers, speaker: speakers[0] || "",
+      content: sText, chunk_text: sText, text: sText,
+      score: score
+    };
+  };
+
+  OD.normalizeSources = function (list) {
+    if (!Array.isArray(list)) return [];
+    return list.map(function (s, i) { return OD.normalizeSource(s, i); });
+  };
+
+  /* Normalize search/chat envelopes so callers always see
+     { query|question, limit|count, results|sources(normalized) }. */
+  OD.normalizeSearch = function (res, fallbackQuery, fallbackLimit) {
+    res = (res && typeof res === "object") ? res : {};
+    var results = OD.normalizeSources(res.results || res.snippets || res.sources || []);
+    var limit = (res.limit != null ? res.limit : (res.count != null ? res.count : fallbackLimit));
+    if (limit == null) limit = results.length;
+    return {
+      query: (res.query != null ? res.query : (fallbackQuery || "")),
+      limit: limit,
+      count: (res.count != null ? res.count : results.length),
+      results: results
+    };
+  };
+
+  OD.normalizeChat = function (res) {
+    res = (res && typeof res === "object") ? res : {};
+    return {
+      question: res.question || "",
+      answer: res.answer || "",
+      sources: OD.normalizeSources(res.sources || res.results || []),
+      model: res.model || "",
+      latency_ms: (res.latency_ms != null ? res.latency_ms : null),
+      total_tokens: (res.total_tokens != null ? res.total_tokens : null)
+    };
   };
 
   /* ── API layer (mock + real, tolerant shapes) ─────────────── */
@@ -230,9 +299,10 @@
         await wait(340);
         const results = OD.mockSources().slice(0, limit || 5).map((s) => ({ ...s, score: Math.min(0.97, s.score + (Math.random() - 0.5) * 0.06) }));
         OD.log.add({ id: OD.uid(), ts: Date.now(), method: "POST", path: "/api/v1/search", status: 200, ms: Date.now() - t0, tokens: 0, err: null, mock: true, note: query });
-        return { query, limit: limit || 5, results };
+        return OD.normalizeSearch({ query, limit: limit || 5, results }, query, limit || 5);
       }
-      return OD.request("POST", "/api/v1/search", { query, limit: limit || 5 });
+      const res = await OD.request("POST", "/api/v1/search", { query, limit: limit || 5 });
+      return OD.normalizeSearch(res, query, limit || 5);
     },
     async chat(question, signal) {
       if (S.mock) {
@@ -242,9 +312,10 @@
         const tokens = 2680 + Math.floor(Math.random() * 420);
         const ms = Date.now() - t0;
         OD.log.add({ id: OD.uid(), ts: Date.now(), method: "POST", path: "/api/v1/chat", status: 200, ms, tokens, err: null, mock: true, note: question.slice(0, 60) });
-        return { question, model: "wuwa-lore-model", latency_ms: ms, total_tokens: tokens, answer: MOCK_ANSWER, sources: OD.mockSources() };
+        return OD.normalizeChat({ question, model: "wuwa-lore-model", latency_ms: ms, total_tokens: tokens, answer: MOCK_ANSWER, sources: OD.mockSources() });
       }
-      return OD.request("POST", "/api/v1/chat", { question }, signal);
+      const res = await OD.request("POST", "/api/v1/chat", { question }, signal);
+      return OD.normalizeChat(res);
     },
     async ingest(payload) {
       if (S.mock) {

@@ -241,7 +241,7 @@
         host.innerHTML =
           '<div class="footnotes-head"><h3>Top matches</h3>' +
           '<span class="tiny dim mono">preview while generating</span></div>' +
-          res.results.map(function (s) { return sourceCard(s, true); }).join("");
+          OD.normalizeSources(res.results).map(function (s) { return sourceCard(s, true); }).join("");
         wireSourceCards(host);
       }).catch(function () {});
     }
@@ -295,6 +295,7 @@
 
   /* ── answer ───────────────────────────────────────────────── */
   function renderAnswer(question, data) {
+    data = OD.normalizeChat(data || {});
     var model = data.model || "";
     current = { id: OD.uid(), q: question, ts: Date.now(), answer: data.answer || "", sources: data.sources || [], meta: { model: model, latency_ms: data.latency_ms, total_tokens: data.total_tokens } };
     if (!model) document.getElementById("banner-retrieval").hidden = false;
@@ -370,17 +371,29 @@
     return esc.split(/\n{2,}/).map(function (p) { return "<p>" + p.replace(/\n/g, "<br>") + "</p>"; }).join("");
   }
 
-  /* ── sources ──────────────────────────────────────────────── */
-  function sourceCard(s, isPreview) {
-    var title = s.page_title || s.page || "[page title not exposed]";
-    var section = s.section_title || s.section || "";
-    var spk = s.speakers || (s.speaker ? [s.speaker] : []);
-    var score = typeof s.score === "number" ? s.score : null;
-    var text = s.chunk_text || s.text || "";
-    return '<article class="source" id="src-' + s.index + '" data-od-id="source-card-' + s.index + '">' +
+  /* ── sources (tolerant to BOTH shapes via OD.normalizeSource) ── */
+  // TODO(element/faction filter): backend SourceSnippet currently exposes only
+  // {title,section,subsection,speakers,content,score} — no element/faction fields.
+  // Cards below already carry data-title/data-section/data-speakers hooks; once the
+  // API adds element/faction, add matching data-attrs here + chip filters (see
+  // search.html render()) without changing the normalizer contract.
+  function sourceCard(raw, isPreview) {
+    var s = OD.normalizeSource(raw, (raw && raw.index ? raw.index - 1 : 0));
+    var title = s.title;
+    var section = s.section;
+    var subsection = s.subsection || "";
+    var spk = s.speakers || [];
+    var score = s.score;
+    var text = s.content;
+    return '<article class="source" id="src-' + s.index + '" data-od-id="source-card-' + s.index + '"' +
+      ' data-index="' + s.index + '" data-title="' + title.replace(/"/g, "&quot;") + '"' +
+      ' data-section="' + section.replace(/"/g, "&quot;") + '"' +
+      ' data-speakers="' + spk.join(",").replace(/"/g, "&quot;") + '"' +
+      (isPreview ? ' data-preview="true"' : '') + '>' +
       '<div class="source-head"><span class="source-idx">' + s.index + '</span>' +
         '<div class="grow"><div class="source-title">' + title + '</div>' +
-        (section ? '<div class="source-sub">' + section + '</div>' : '') + '</div>' +
+        (section ? '<div class="source-sub">' + section + '</div>' : '') +
+        (subsection ? '<div class="source-sub dim">' + subsection + '</div>' : '') + '</div>' +
       '</div>' +
       '<div class="source-body">' +
         (spk.length ? '<div class="chips" style="margin-bottom:8px">' + spk.map(function (n) { return OD.speakerChip(n); }).join("") + '</div>' : '') +
@@ -389,7 +402,7 @@
       '<div class="source-foot">' +
         (score != null ? '<span class="score"><span class="bar"><i style="width:' + Math.round(Math.min(1, Math.max(0, score)) * 100) + '%"></i></span><span class="n">' + score.toFixed(2) + '</span></span>' : '<span class="tiny dim">score not reported</span>') +
         '<span class="spacer"></span>' +
-        (s.page_title ? '<a class="btn btn-ghost btn-sm" href="' + OD.wikiUrl(s.page_title) + '" target="_blank" rel="noopener">' + OD.icons.external + 'Wiki</a>' : '') +
+        '<a class="btn btn-ghost btn-sm" href="' + OD.wikiUrl(title) + '" target="_blank" rel="noopener">' + OD.icons.external + 'Wiki</a>' +
         '<button class="btn btn-ghost btn-sm" data-expand="' + s.index + '" type="button">Expand</button>' +
         '<button class="btn btn-ghost btn-sm" data-copy-chunk="' + s.index + '" type="button">Copy</button>' +
       '</div></article>';
@@ -399,11 +412,12 @@
   function renderSources(list) {
     var host = document.getElementById("footnote-block");
     if (!host) return;
-    if (!list || !list.length) { host.innerHTML = ""; return; }
+    var items = OD.normalizeSources(list);
+    if (!items.length) { host.innerHTML = ""; return; }
     host.innerHTML =
       '<div class="footnotes-head"><h3>Sources</h3>' +
-      '<span class="tiny dim mono">' + list.length + ' passage' + (list.length === 1 ? '' : 's') + '</span></div>' +
-      list.map(function (s) { return sourceCard(s); }).join("");
+      '<span class="tiny dim mono">' + items.length + ' passage' + (items.length === 1 ? '' : 's') + '</span></div>' +
+      items.map(function (s) { return sourceCard(s); }).join("");
     wireSourceCards(host);
   }
 
@@ -457,8 +471,9 @@
       "",
       "## Sources"
     ];
-    (entry.sources || []).forEach(function (s) {
-      lines.push("- [" + s.index + "] " + (s.page_title || "?") + (s.section_title ? " — " + s.section_title : "") + " (score " + (typeof s.score === "number" ? s.score.toFixed(2) : "n/a") + ")");
+    (entry.sources || []).forEach(function (raw, i) {
+      var s = OD.normalizeSource(raw, i);
+      lines.push("- [" + s.index + "] " + (s.title || "?") + (s.section ? " — " + s.section : "") + (s.subsection ? " / " + s.subsection : "") + " (score " + (typeof s.score === "number" ? s.score.toFixed(2) : "n/a") + ")");
     });
     return lines.join("\n");
   }

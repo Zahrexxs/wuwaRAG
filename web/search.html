@@ -107,6 +107,7 @@
   }
 
   function render(q, res) {
+    res = OD.normalizeSearch(res, q, +limit.value);
     lastResults = res.results || [];
     activeFilter = null;
     if (!lastResults.length) {
@@ -114,7 +115,12 @@
       resultsEl.innerHTML = '<div class="card state">' + OD.icons.search + '<h3>No passages scored above the relevance threshold.</h3><p class="muted">Try different wording, or widen the scope — the index covers five pages of the Simulacrum of the Heart arc.</p></div>';
       return;
     }
-    var sections = Array.from(new Set(lastResults.map(function (r) { return r.section_title; }).filter(Boolean)));
+    // Section filter chips double as client-filter hooks: each card below carries
+    // data-title / data-section / data-speakers. Element/faction filtering is NOT
+    // wired because neither mock nor backend sources expose those fields yet —
+    // TODO: when the API adds `element`/`faction` to SourceSnippet, add matching
+    // data-attrs on cards + chips here (same pattern as the section filter).
+    var sections = Array.from(new Set(lastResults.map(function (r) { return OD.normalizeSource(r).section; }).filter(Boolean)));
     metaEl.innerHTML =
       '<span class="tiny dim mono">' + lastResults.length + ' passages · query "' + q.replace(/"/g, "") + '"</span>' +
       '<div class="row gap-2 wrapflex">' +
@@ -142,19 +148,28 @@
   }
 
   function renderCards(q) {
-    var list = lastResults.filter(function (r) { return !activeFilter || r.section_title === activeFilter; });
-    resultsEl.innerHTML = list.map(function (r, i) {
+    var list = OD.normalizeSources(lastResults).filter(function (r) { return !activeFilter || r.section === activeFilter; });
+    resultsEl.innerHTML = list.map(function (raw, i) {
+      var r = OD.normalizeSource(raw, i);
       var spk = r.speakers || [];
-      return '<article class="source" data-od-id="result-' + (i + 1) + '">' +
+      var score = r.score;
+      var scoreHTML = (score != null)
+        ? '<span class="score" style="align-self:center"><span class="bar"><i style="width:' + Math.round(Math.min(1, Math.max(0, score)) * 100) + '%"></i></span><span class="n">' + score.toFixed(2) + '</span></span>'
+        : '<span class="tiny dim" style="align-self:center">score not reported</span>';
+      return '<article class="source" data-od-id="result-' + (i + 1) + '"' +
+        ' data-index="' + r.index + '" data-title="' + r.title.replace(/"/g, "&quot;") + '"' +
+        ' data-section="' + r.section.replace(/"/g, "&quot;") + '"' +
+        ' data-speakers="' + spk.join(",").replace(/"/g, "&quot;") + '">' +
         '<div class="source-head"><span class="source-idx">' + r.index + '</span>' +
-        '<div class="grow"><div class="source-title">' + (r.page_title || "[page title not exposed]") + '</div>' +
-        '<div class="source-sub">' + (r.section_title || "section not reported") + '</div></div>' +
-        '<span class="score" style="align-self:center"><span class="bar"><i style="width:' + Math.round(Math.min(1, Math.max(0, r.score)) * 100) + '%"></i></span><span class="n">' + r.score.toFixed(2) + '</span></span></div>' +
+        '<div class="grow"><div class="source-title">' + r.title + '</div>' +
+        '<div class="source-sub">' + (r.section || "section not reported") + '</div>' +
+        (r.subsection ? '<div class="source-sub dim">' + r.subsection + '</div>' : '') + '</div>' +
+        scoreHTML + '</div>' +
         '<div class="source-body">' + (spk.length ? '<div class="chips" style="margin-bottom:8px">' + spk.map(function (n) { return OD.speakerChip(n); }).join("") + '</div>' : '') +
-        '<p class="snippet clamp">' + (r.chunk_text || r.text || "") + '</p></div>' +
+        '<p class="snippet clamp">' + r.content + '</p></div>' +
         '<div class="source-foot"><button class="btn btn-ghost btn-sm" data-expand type="button">Expand</button>' +
         '<button class="btn btn-ghost btn-sm" data-copy type="button">Copy chunk</button><span class="spacer"></span>' +
-        (r.page_title ? '<a class="btn btn-ghost btn-sm" href="' + OD.wikiUrl(r.page_title) + '" target="_blank" rel="noopener">' + OD.icons.external + 'Wiki</a>' : '') +
+        '<a class="btn btn-ghost btn-sm" href="' + OD.wikiUrl(r.title) + '" target="_blank" rel="noopener">' + OD.icons.external + 'Wiki</a>' +
         '</div></article>';
     }).join("");
     resultsEl.querySelectorAll("[data-expand]").forEach(function (b) {
